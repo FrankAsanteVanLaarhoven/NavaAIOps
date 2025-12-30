@@ -1,0 +1,48 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY src/ ./src/
+
+# Create a simple FastAPI server for SageMaker
+# This assumes you have a src/main.py that loads the RL model
+# If not, create it separately
+RUN if [ ! -f src/main.py ]; then \
+    echo 'from fastapi import FastAPI\n\
+from pydantic import BaseModel\n\
+import json\n\
+\n\
+app = FastAPI()\n\
+\n\
+class PredictionRequest(BaseModel):\n\
+    inputs: list\n\
+\n\
+@app.post("/invocations")\n\
+async def predict(request: PredictionRequest):\n\
+    # Load your RL model here\n\
+    # For now, return mock predictions\n\
+    rewards = [0.5] * len(request.inputs)\n\
+    return {"rewards": rewards}\n\
+\n\
+@app.get("/ping")\n\
+async def ping():\n\
+    return {"status": "healthy"}' > src/main.py; \
+    fi
+
+# Install uvicorn if not in requirements
+RUN pip install --no-cache-dir uvicorn fastapi pydantic
+
+EXPOSE 8080
+
+# SageMaker expects the server to run on port 8080
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080"]

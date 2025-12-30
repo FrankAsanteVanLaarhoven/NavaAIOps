@@ -1,0 +1,19 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/retraining",
+      "schedule": "0 2 * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/ai/plan/route.ts": {
+      "runtime": "edge"
+    },
+    "src/app/api/ai/resolve/route.ts": {
+      "runtime": "edge"
+    },
+    "src/app/api/ai/rl/reward/route.ts": {
+      "runtime": "nodejs"
+    }
+  }
+}

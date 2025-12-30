@@ -3,6 +3,10 @@ import { db } from '@/lib/db';
 import { generateSyntheticIncident } from '@/lib/synthetic/data-generator';
 import { openai } from '@ai-sdk/openai';
 import { generateText } from 'ai';
+import { getRewardPrediction } from './reward-model';
+import fs from 'fs';
+import path from 'path';
+import { mkdir } from 'fs/promises';
 
 /**
  * Reinforcement Learning Loop
@@ -177,11 +181,86 @@ Provide your improvements in JSON format:
     ];
   }
 
-  // 5. Generate synthetic data for next training iteration (Continuous Learning)
+  // 5. Predict Rewards for proposed actions using RMAF (Reward Modeling)
+  const rlData: any[] = [];
+  
+  for (const resolution of recentResolutions.slice(0, 10)) { // Process top 10 for efficiency
+    const message = resolution.thread?.messages?.[0];
+    const content = typeof message?.content === 'string'
+      ? JSON.parse(message.content)
+      : message?.content || {};
+
+    const state = {
+      incident: content.title || resolution.thread?.title || 'Unknown',
+      severity: resolution.severity,
+      status: resolution.status,
+      actions_taken: content.actions || [],
+      rootCause: resolution.rootCause,
+      fix: resolution.fix,
+    };
+
+    // Get predicted reward BEFORE acting (if we have action data)
+    if (state.actions_taken.length > 0) {
+      try {
+        const rewardResult = await getRewardPrediction({
+          input: {
+            state,
+            proposedAction: {
+              type: state.actions_taken[0]?.type || 'UNKNOWN',
+              params: state.actions_taken[0]?.params || {},
+            },
+          },
+        });
+
+        // Use this reward for PPO update (simulated here)
+        rlData.push({
+          messages: [
+            {
+              role: 'system',
+              content: `Predicted Reward for action: ${rewardResult.reward.toFixed(2)}. ${rewardResult.reasoning || ''}`,
+            },
+            {
+              role: 'user',
+              content: JSON.stringify(state.actions_taken[0]),
+            },
+            {
+              role: 'assistant',
+              content: 'Action Taken.',
+            },
+          ],
+          reward_value: rewardResult.reward, // This is the advantage for PPO
+          factors: rewardResult.factors,
+        });
+      } catch (error) {
+        console.error('Reward prediction failed for resolution:', error);
+      }
+    }
+  }
+
+  // 6. Create JSONL with Reward Labels (PPO uses `reward_value` to compute advantage)
+  if (rlData.length > 0) {
+    try {
+      const tmpDir = path.join(process.cwd(), 'tmp');
+      await mkdir(tmpDir, { recursive: true });
+
+      const filename = `rl-data-${Date.now()}.jsonl`;
+      const filepath = path.join(tmpDir, filename);
+
+      // Write JSONL file (one JSON object per line)
+      const jsonlContent = rlData.map((item) => JSON.stringify(item)).join('\n');
+      fs.writeFileSync(filepath, jsonlContent, 'utf-8');
+
+      console.log(`[RL Loop] Saved ${rlData.length} RL training examples to ${filepath}`);
+    } catch (error) {
+      console.error('[RL Loop] Failed to save RL data:', error);
+    }
+  }
+
+  // 7. Generate synthetic data for next training iteration (Continuous Learning)
   const syntheticIncidents = generateSyntheticIncident(10); // Generate 10 edge cases
   console.log(`[RL Loop] Generated ${syntheticIncidents.length} synthetic incidents for next training iteration.`);
 
-  // 6. Log the reflection episode
+  // 8. Log the reflection episode
   const episode: ReflectionEpisode = {
     episodeId,
     timestamp: new Date(),
