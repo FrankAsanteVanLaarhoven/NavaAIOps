@@ -12,7 +12,11 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "prepare-training-data": "bun run scripts/prepare-training-data.ts"
+    "prepare-training-data": "bun run scripts/prepare-training-data.ts",
+    "scraper:build": "cd scraper && cargo build --release",
+    "scraper:run": "cd scraper && cargo run --release",
+    "precognitor:build": "cd precognitor && cargo build --release",
+    "benchmark": "node benchmarks/ironclad-loop.js"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.1",
@@ -93,10 +97,12 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.525.0",
     "markdown-it": "^14.1.0",
+    "nanoid": "^5.0.0",
     "next": "15.3.5",
     "next-auth": "^4.24.11",
     "next-intl": "^4.3.4",
     "next-themes": "^0.4.6",
+    "onnxruntime-node": "^1.20.0",
     "openai": "^6.15.0",
     "pdfkit": "^0.17.2",
     "pgvector": "^0.2.1",

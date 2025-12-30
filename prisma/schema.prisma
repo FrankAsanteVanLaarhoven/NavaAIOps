@@ -293,6 +293,21 @@ model Regulation {
   @@index([workspaceId, type])
 }
 
+model SignalStream {
+  id            String   @id @default(cuid())
+  url           String
+  content       String   // Text content (SQLite doesn't support @db.Text)
+  category      String   // "Competitor" | "Vulnerability" | "Regulation"
+  relevanceScore Float    @default(0)
+  embedding     String?  // JSON array of embedding vector
+  timestamp     DateTime @default(now())
+  processed     Boolean  @default(false)
+
+  @@index([timestamp])
+  @@index([category])
+  @@index([processed])
+}
+
 model ComplianceLog {
   id            String   @id @default(cuid())
   incidentId    String
