@@ -32,6 +32,10 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -47,3 +51,66 @@ test
 prompt
 
 server.log
+
+# database
+*.db
+*.db-journal
+prisma/db/*.db
+prisma/db/*.db-journal
+db/*.db
+db/*.db-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+
+# Build outputs
+dist/
+build/
+out/
+
+# Logs
+logs/
+*.log
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Python / Training
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+*.egg-info/
+.pytest_cache/
+*.ipynb_checkpoints
+.ipynb_checkpoints/
+
+# Training data
+data/*.jsonl
+data/*.json
+*.pth
+*.pt
+*.ckpt
+*.safetensors
+
+# Kaggle / Colab
+.kaggle/
