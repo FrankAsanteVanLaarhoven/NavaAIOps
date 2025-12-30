@@ -42,14 +42,16 @@ export function uuidToBytes32(uuid: string): string {
  * Polygon Bridge Client
  */
 export class PolygonBridge {
-  private provider: ethers.Provider;
-  private contract: ethers.Contract;
+  private provider: Provider;
+  private contract: Contract;
   private contractAddress: string;
+  private rpcUrl: string;
 
   constructor(config: PolygonBridgeConfig) {
-    this.provider = new ethers.JsonRpcProvider(config.rpcUrl);
+    this.rpcUrl = config.rpcUrl;
+    this.provider = createProvider(config.rpcUrl);
     this.contractAddress = config.contractAddress;
-    this.contract = new ethers.Contract(
+    this.contract = createContract(
       config.contractAddress,
       AUDIT_LEDGER_ABI,
       this.provider

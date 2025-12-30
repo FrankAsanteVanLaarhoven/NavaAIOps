@@ -44,50 +44,55 @@ export function AuditLogAnalysis({ logId, logEntry }: AuditLogAnalysisProps) {
   const latestMessage = messages[messages.length - 1];
 
   return (
-    <Card className="mt-2">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileSearch className="h-4 w-4 text-blue-500" />
-            <CardTitle className="text-sm">AI Analysis (Fine-Tuned Model)</CardTitle>
+    <div className="space-y-4">
+      <Card className="mt-2">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileSearch className="h-4 w-4 text-blue-500" />
+              <CardTitle className="text-sm">AI Analysis (Fine-Tuned Model)</CardTitle>
+            </div>
+            <Button
+              onClick={handleAnalyze}
+              disabled={isAnalyzing || isLoading}
+              size="sm"
+              variant="outline"
+            >
+              {isAnalyzing || isLoading ? (
+                <>
+                  <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                'Analyze'
+              )}
+            </Button>
           </div>
-          <Button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || isLoading}
-            size="sm"
-            variant="outline"
-          >
-            {isAnalyzing || isLoading ? (
-              <>
-                <Loader2 className="w-3 h-3 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              'Analyze'
-            )}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isAnalyzing || isLoading ? (
-          <div className="space-y-2">
-            <Skeleton className="h-3 w-full" />
-            <Skeleton className="h-3 w-3/4" />
-          </div>
-        ) : latestMessage?.content ? (
-          <div className="text-sm space-y-2">
-            {latestMessage.content.split('\n').map((line, i) => (
-              <p key={i} className="text-muted-foreground">
-                {line}
-              </p>
-            ))}
-          </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Click "Analyze" to get AI-powered audit log analysis using the fine-tuned DevOps model.
-          </p>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          {isAnalyzing || isLoading ? (
+            <div className="space-y-2">
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          ) : latestMessage?.content ? (
+            <div className="text-sm space-y-2">
+              {latestMessage.content.split('\n').map((line, i) => (
+                <p key={i} className="text-muted-foreground">
+                  {line}
+                </p>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Click "Analyze" to get AI-powered audit log analysis using the fine-tuned DevOps model.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Blockchain Verification */}
+      <BlockchainVerify logId={logId} autoVerify={false} />
+    </div>
   );
 }
