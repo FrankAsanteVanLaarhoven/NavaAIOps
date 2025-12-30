@@ -1,19 +1,47 @@
 {
+  "buildCommand": "bun run build",
+  "devCommand": "bun run dev",
+  "installCommand": "bun install",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/ai/**/*.ts": {
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/retraining",
       "schedule": "0 2 * * *"
     }
   ],
-  "functions": {
-    "src/app/api/ai/plan/route.ts": {
-      "runtime": "edge"
-    },
-    "src/app/api/ai/resolve/route.ts": {
-      "runtime": "edge"
-    },
-    "src/app/api/ai/rl/reward/route.ts": {
-      "runtime": "nodejs"
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "origin-when-cross-origin"
+        }
+      ]
     }
-  }
+  ]
 }

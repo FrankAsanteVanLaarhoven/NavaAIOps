@@ -1,0 +1,401 @@
+// PostgreSQL-compatible Prisma schema
+// Use this for production (Neon PostgreSQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// All models remain the same, but with PostgreSQL-specific optimizations
+// Note: SignalStream.content can use @db.Text in PostgreSQL
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Message[]
+  xp        UserXP?
+  achievements UserAchievement[]
+
+  @@index([email])
+}
+
+model Channel {
+  id        String    @id @default(cuid())
+  name      String
+  type      String    @default("general")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  threads   Thread[]
+  modules   ThreadModule[]
+  automations Automation[]
+  workflows WorkflowTrigger[]
+
+  @@index([type])
+}
+
+model Thread {
+  id        String        @id @default(cuid())
+  channelId String
+  channel   Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  title     String?
+  canvasContent String?   @db.Text
+  isCanvas  Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  Message[]
+  modules   ThreadModule[]
+  incidents IncidentData?
+  automations Automation[]
+  workflows WorkflowTrigger[]
+  complianceLogs ComplianceLog[]
+
+  @@index([channelId])
+  @@index([isCanvas])
+}
+
+model Message {
+  id          String       @id @default(cuid())
+  threadId    String
+  thread      Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  content     String       @db.Text
+  type        String       @default("text")
+  embedding   String?      @db.Text
+  searchText  String?      @db.Text
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  pollOptions PollOption[]
+  reactions   Reaction[]
+  embeddings  MessageEmbedding[]
+
+  @@index([threadId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([searchText], type: Gin) // Full-text search index
+}
+
+model ThreadModule {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  data      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([threadId])
+  @@index([channelId])
+}
+
+model IncidentData {
+  id          String   @id @default(cuid())
+  threadId    String   @unique
+  thread      Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  status      String   @default("investigating")
+  severity    String   @default("sev-2")
+  impact      String?  @db.Text
+  rootCause   String?  @db.Text
+  fix         String?  @db.Text
+  timeline    String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolvedAt  DateTime?
+
+  @@index([status])
+  @@index([severity])
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  text      String
+  votes     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@index([messageId])
+  @@index([userId])
+  @@unique([messageId, userId, emoji])
+}
+
+model Automation {
+  id        String   @id @default(cuid())
+  threadId  String?
+  thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name      String
+  trigger   String   @db.Text
+  actions   String   @db.Text
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([threadId])
+  @@index([channelId])
+  @@index([enabled])
+}
+
+model CodeIndex {
+  id          String   @id @default(cuid())
+  repository  String
+  filePath    String
+  content     String   @db.Text
+  embedding   String?  @db.Text
+  language    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([repository])
+  @@index([filePath])
+  @@unique([repository, filePath])
+}
+
+model RepoFile {
+  id          String   @id @default(cuid())
+  repoId      String
+  filePath    String
+  content     String   @db.Text
+  commitSha   String?
+  branch      String   @default("main")
+  language    String?
+  embedding   String?  @db.Text
+  size        Int?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([repoId])
+  @@index([filePath])
+  @@unique([repoId, filePath, commitSha])
+}
+
+model GitHubIntegration {
+  id            String   @id @default(cuid())
+  userId        String
+  accessToken   String   @db.Text
+  repository    String
+  webhookSecret String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([repository])
+}
+
+model MessageEmbedding {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  embedding String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([messageId])
+}
+
+model WorkflowTrigger {
+  id          String   @id @default(cuid())
+  name        String
+  triggerType String
+  triggerValue String
+  channelId   String?
+  channel     Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  threadId    String?
+  thread      Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  actions     String   @db.Text
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([threadId])
+  @@index([enabled])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tableName String
+  action    String
+  recordId  String
+  userId    String
+  metadata  String?  @db.Text
+  timestamp DateTime @default(now())
+
+  @@index([tableName])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model UserXP {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  streak    Int      @default(0)
+  lastActive DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([xp])
+  @@index([level])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String
+  description String   @db.Text
+  icon        String
+  xpReward    Int      @default(0)
+  category    String
+  createdAt   DateTime @default(now())
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement    Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  provider    String
+  config      String   @db.Text
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([provider])
+}
+
+model Policy {
+  id          String   @id @default(cuid())
+  name        String
+  version     String
+  category    String
+  content      String   @default("{}") @db.Text
+  isActive    Boolean  @default(true)
+  workspaceId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  complianceLogs ComplianceLog[]
+
+  @@index([workspaceId, category])
+}
+
+model Regulation {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  limitValue  Int
+  unit        String
+  isActive    Boolean  @default(true)
+  workspaceId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  complianceLogs ComplianceLog[]
+
+  @@index([workspaceId, type])
+}
+
+model SignalStream {
+  id            String   @id @default(cuid())
+  url           String
+  content       String   @db.Text
+  category      String
+  relevanceScore Float    @default(0)
+  embedding     String?  @db.Text
+  timestamp     DateTime @default(now())
+  processed     Boolean  @default(false)
+
+  @@index([timestamp])
+  @@index([category])
+  @@index([processed])
+}
+
+model ComplianceLog {
+  id            String   @id @default(cuid())
+  incidentId    String
+  incident      Thread   @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  policyId      String
+  policy        Policy   @relation(fields: [policyId], references: [id])
+  regulationId  String?
+  regulation    Regulation? @relation(fields: [regulationId], references: [id])
+  status        String
+  reason        String?  @db.Text
+  score         Float    @default(1.0)
+  evidence      String?  @default("{}") @db.Text
+  signature     String   @default("")
+  certifiedBy   String   @default("system")
+  timestamp     DateTime @default(now())
+
+  @@index([incidentId])
+  @@index([status])
+  @@index([timestamp])
+}
+
+model RemediationScript {
+  id            String   @id @default(cuid())
+  name          String
+  type          String
+  command       String   @db.Text
+  workspaceId   String?
+  description   String?  @db.Text
+  risk          String?
+  estimatedDuration String?
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([type])
+}
+
+model IncidentUpdate {
+  id            String   @id @default(cuid())
+  incidentId    String
+  phase         String
+  status        String
+  actor         String
+  content       String   @default("") @db.Text
+  metadata      String?  @db.Text
+  approvedBy    String?
+  approvedAt    DateTime?
+  timestamp     DateTime @default(now())
+
+  @@index([incidentId])
+  @@index([phase])
+  @@index([status])
+  @@index([timestamp])
+}
