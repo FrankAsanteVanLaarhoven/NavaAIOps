@@ -153,6 +153,46 @@ export function VoiceInput({
     }
   };
 
+  // Async voice note recording with Whisper transcription
+  const handleVoiceNote = async (audioBlob: Blob) => {
+    setIsProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice-note.webm');
+      formData.append('threadId', workspaceId); // Use workspaceId as threadId for now
+      formData.append('userId', 'user-123'); // Get from user context
+      formData.append('channelId', channelId);
+
+      const response = await fetch('/api/voice-notes', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to process voice note');
+      }
+
+      const data = await response.json();
+      
+      // Call onText with transcribed text
+      onText(data.transcription);
+      
+      toast({
+        title: 'Voice Note',
+        description: 'Voice note transcribed and saved',
+      });
+    } catch (error: any) {
+      console.error('Voice note processing failed:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to process voice note',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const startListening = () => {
     if (!recognitionRef.current) {
       toast({

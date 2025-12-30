@@ -85,6 +85,21 @@ export function initializeWebSocket(server: HTTPServer) {
       });
     });
 
+    // Voice notes
+    socket.on('voice-note-start', (data: { threadId: string; userId: string }) => {
+      socket.to(`thread:${data.threadId}`).emit('user-recording-voice', {
+        userId: data.userId,
+        threadId: data.threadId,
+      });
+    });
+
+    socket.on('voice-note-end', (data: { threadId: string; userId: string }) => {
+      socket.to(`thread:${data.threadId}`).emit('user-stopped-recording', {
+        userId: data.userId,
+        threadId: data.threadId,
+      });
+    });
+
     // Presence
     socket.on('update-presence', (data: { userId: string; status: 'online' | 'away' | 'offline' }) => {
       socket.broadcast.emit('presence-updated', {
