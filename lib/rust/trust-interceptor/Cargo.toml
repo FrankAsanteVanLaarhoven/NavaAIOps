@@ -1,23 +1,19 @@
 [package]
-name = "navaflow-ironclad"
+name = "trust-interceptor"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "trust_interceptor"
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
-reqwest = { version = "0.12", features = ["rustls-tls", "cookies", "gzip", "json"] }
-scraper = "0.21"
+sha2 = "0.10"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
-select = "0.6"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-regex = "1.10"
-base64 = "0.22"
-chrono = { version = "0.4", features = ["serde"] }
-uuid = { version = "1", features = ["v4", "serde"] }
-async-trait = "0.1"
 anyhow = "1.0"
 thiserror = "1.0"
-sha2 = "0.10"
 
 [profile.release]
 opt-level = 3

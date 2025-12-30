@@ -40,6 +40,19 @@ struct CompetitorSignal {
     raw_data: String,
 }
 
+// New structure for security data
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct SecurityIntel {
+    id: String,
+    url: String,
+    timestamp: i64,
+    is_threat: bool,
+    threat_type: Option<String>, // "CVE", "Ransomware", "DDOS", "XSS"
+    raw_payload_hash: Option<String>, // SHA256 of embedded script
+    severity: f32,
+    content_snippet: String,
+}
+
 // The "Ironclad" Scraper Engine
 #[derive(Clone)]
 struct IroncladEngine {
@@ -137,6 +150,9 @@ impl IroncladEngine {
                                         snippet = snippet.chars().take(1000).collect();
                                     }
 
+                                    // NEW: Deep Insight Extraction for Threats
+                                    let (is_threat, threat_type, payload_hash) = engine.detect_threat_keywords(&html, &snippet);
+
                                     // 2. Generate "Nano-Embedding" placeholder
                                     // In production, this calls a local embedding service
                                     let embedding = vec![0.0f32; 1536]; // Placeholder
@@ -203,6 +219,73 @@ impl IroncladEngine {
     pub async fn get_signals(&self) -> Vec<CompetitorSignal> {
         let signals = self.signal_channel.lock().await;
         signals.clone()
+    }
+
+    // NEW: Deep Insight Extraction for Threats
+    fn detect_threat_keywords(&self, html: &str, snippet: &str) -> (bool, Option<String>, Option<String>) {
+        let keywords = vec![
+            ("cve-", "CVE"),
+            ("exploit", "Exploit"),
+            ("payload", "Payload"),
+            ("shellcode", "Shellcode"),
+            ("malware", "Malware"),
+            ("ransomware", "Ransomware"),
+            ("xss", "XSS"),
+            ("sql injection", "SQL Injection"),
+            ("remote code execution", "RCE"),
+        ];
+
+        let content_lower = format!("{} {}", html.to_lowercase(), snippet.to_lowercase());
+        
+        for (keyword, threat_type) in keywords {
+            if content_lower.contains(keyword) {
+                // Compute hash of the snippet for tracking
+                use sha2::{Sha256, Digest};
+                let mut hasher = Sha256::new();
+                hasher.update(snippet.as_bytes());
+                let hash = format!("{:x}", hasher.finalize());
+                return (true, Some(threat_type.to_string()), Some(hash));
+            }
+        }
+
+        (false, None, None)
+    }
+
+    fn classify_threat(&self, html: &str) -> Option<String> {
+        let html_lower = html.to_lowercase();
+        
+        if html_lower.contains("cve-") {
+            Some("CVE".to_string())
+        } else if html_lower.contains("ransomware") || html_lower.contains("cryptolocker") {
+            Some("Ransomware".to_string())
+        } else if html_lower.contains("ddos") || html_lower.contains("distributed denial") {
+            Some("DDOS".to_string())
+        } else if html_lower.contains("<script>") && html_lower.contains("eval") {
+            Some("XSS".to_string())
+        } else {
+            None
+        }
+    }
+
+    fn extract_script_hash(&self, html: &str) -> Option<String> {
+        use sha2::{Sha256, Digest};
+        
+        // Extract script tags
+        let document = Html::parse_document(html);
+        let script_selector = Selector::parse("script").ok()?;
+        
+        let mut script_content = String::new();
+        for element in document.select(&script_selector) {
+            script_content.push_str(&element.text().collect::<String>());
+        }
+
+        if script_content.is_empty() {
+            return None;
+        }
+
+        let mut hasher = Sha256::new();
+        hasher.update(script_content.as_bytes());
+        Some(format!("{:x}", hasher.finalize()))
     }
 }
 

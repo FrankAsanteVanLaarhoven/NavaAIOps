@@ -7,7 +7,7 @@
 # This notebook provides the complete implementation for fine-tuning and optimising
 # Large Language Models (LLMs) for the NavaFlow Autonomous Site Reliability
 # Engineering (SRE) platform. It covers the Kaggle Multi-Grandmaster (MGR) approach,
-# the Constrained Decentralized Marketplace Protocol (CDMP/CMDP) paradigm, and
+# the Constrained Markov Decision Process (CMDP) paradigm, and
 # Reinforcement Learning (RL) for self-correcting capabilities.
 #
 # MODELS:

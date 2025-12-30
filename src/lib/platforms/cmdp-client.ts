@@ -4,7 +4,7 @@ import { logChange } from '@/lib/services/audit';
 import { executeActionJitter } from '@/lib/ai/realtime-ops';
 
 /**
- * CDMP/CMDP (Constrained Decentralized Marketplace / Constrained Multi-Platform)
+ * CMDP (Constrained Markov Decision Process)
  * Safety layer for platform interactions using State Space Model (SSM)
  */
 
@@ -47,7 +47,7 @@ export interface PlatformActionResult {
 }
 
 /**
- * Execute platform action with CDMP safety constraints
+ * Execute platform action with CMDP safety constraints
  */
 export async function executePlatformAction({
   platform,
@@ -60,7 +60,7 @@ export async function executePlatformAction({
   userId?: string;
 }): Promise<PlatformActionResult> {
   try {
-    // 1. Validate against SafeOperations schema (CDMP)
+    // 1. Validate against SafeOperations schema (CMDP)
     let validatedParams: any;
 
     switch (intent) {
