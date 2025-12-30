@@ -1,0 +1,350 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // Using SQLite for local dev, switch to postgresql for production
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Message[]
+  xp        UserXP?
+  achievements UserAchievement[]
+}
+
+model Channel {
+  id        String    @id @default(cuid())
+  name      String
+  type      String    @default("general") // general, incident, engineering, sales, support
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  threads   Thread[]
+  modules   ThreadModule[]
+  automations Automation[]
+  workflows WorkflowTrigger[]
+}
+
+model Thread {
+  id        String        @id @default(cuid())
+  channelId String
+  channel   Channel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  title     String?
+  canvasContent String?   // JSON string for canvas mode
+  isCanvas  Boolean       @default(false) // Is this thread in canvas mode?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  messages  Message[]
+  modules   ThreadModule[]
+  incidents IncidentData?
+  automations Automation[]
+  workflows WorkflowTrigger[]
+  complianceLogs ComplianceLog[]
+}
+
+model Message {
+  id          String       @id @default(cuid())
+  threadId    String
+  thread      Thread       @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  content     String       // JSON string from TipTap editor
+  type        String       @default("text") // text, poll, qa, voice
+  embedding   String?      // JSON array of embedding vector for semantic search
+  searchText  String?      // Plain text for keyword search
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  pollOptions PollOption[]
+  reactions   Reaction[]
+  embeddings  MessageEmbedding[]
+}
+
+model ThreadModule {
+  id        String   @id @default(cuid())
+  threadId  String
+  thread    Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  type      String   // github, linear, notion, incident, custom
+  title     String
+  data      String   // JSON string with module-specific data
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IncidentData {
+  id          String   @id @default(cuid())
+  threadId    String   @unique
+  thread      Thread   @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  status      String   @default("investigating") // investigating, identified, monitoring, resolved
+  severity    String   @default("sev-2") // sev-0, sev-1, sev-2, sev-3
+  impact      String?  // Description of impact
+  rootCause   String?  // Root cause analysis
+  fix         String?  // Fix applied
+  timeline    String?  // JSON array of timeline events
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  resolvedAt  DateTime?
+}
+
+model PollOption {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  text      String
+  votes     Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+}
+
+model Automation {
+  id        String   @id @default(cuid())
+  threadId  String?
+  thread    Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  channelId String?
+  channel   Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name      String
+  trigger   String   // JSON string with trigger config
+  actions   String   // JSON array of actions
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CodeIndex {
+  id          String   @id @default(cuid())
+  repository  String   // GitHub repo path
+  filePath    String
+  content     String   // File content
+  embedding   String?  // JSON array of embedding vector
+  language    String?  // Programming language
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model RepoFile {
+  id          String   @id @default(cuid())
+  repoId      String   // Repository identifier (owner/repo)
+  filePath    String
+  content     String   // File content
+  commitSha   String?  // Git commit SHA
+  branch      String   @default("main")
+  language    String?  // Programming language
+  embedding   String?  // JSON array of embedding vector
+  size        Int?     // File size in bytes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([repoId])
+  @@index([filePath])
+  @@unique([repoId, filePath, commitSha])
+}
+
+model GitHubIntegration {
+  id            String   @id @default(cuid())
+  userId        String
+  accessToken   String   // Encrypted
+  repository    String   // Full repo path (owner/repo)
+  webhookSecret String?  // For webhook verification
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model MessageEmbedding {
+  id        String   @id @default(cuid())
+  messageId String
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  embedding String   // JSON array of embedding vector (stored as JSON string for SQLite compatibility)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([messageId])
+}
+
+model WorkflowTrigger {
+  id          String   @id @default(cuid())
+  name        String
+  triggerType String   // KEYWORD, CHANNEL_TYPE, USER_ROLE, MESSAGE
+  triggerValue String
+  channelId   String?
+  channel     Channel? @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  threadId    String?
+  thread      Thread?  @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  actions     String   // JSON array of action objects
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([channelId])
+  @@index([threadId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  tableName String
+  action    String   // CREATE, UPDATE, DELETE
+  recordId  String
+  userId    String
+  metadata  String?  // JSON string with additional context
+  timestamp DateTime @default(now())
+
+  @@index([tableName])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model UserXP {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  streak    Int      @default(0)
+  lastActive DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([xp])
+  @@index([level])
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   // emoji or icon name
+  xpReward    Int      @default(0)
+  category    String   // incident, message, automation, etc.
+  createdAt   DateTime @default(now())
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement    Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+model Integration {
+  id          String   @id @default(cuid())
+  workspaceId String?
+  provider    String   // jira, linear, notion, github, sentry
+  config      String   // JSON string with API keys, workspace IDs, etc.
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([provider])
+}
+
+model Policy {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Data Retention Policy"
+  version     String   // e.g., "v1.2"
+  category    String   // e.g., "governance", "sla", "security"
+  content      String   @default("{}") // JSON string with policy rules
+  isActive    Boolean  @default(true)
+  workspaceId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  complianceLogs ComplianceLog[]
+
+  @@index([workspaceId, category])
+}
+
+model Regulation {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Max 5 Instances per Cluster"
+  type        String   // e.g., "rate_limit", "resource_quota", "cost_limit"
+  limitValue  Int      // e.g., 5
+  unit        String   // e.g., "count", "percent", "dollars"
+  isActive    Boolean  @default(true)
+  workspaceId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  complianceLogs ComplianceLog[]
+
+  @@index([workspaceId, type])
+}
+
+model ComplianceLog {
+  id            String   @id @default(cuid())
+  incidentId    String
+  incident      Thread   @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  policyId      String
+  policy        Policy   @relation(fields: [policyId], references: [id])
+  regulationId  String?
+  regulation    Regulation? @relation(fields: [regulationId], references: [id])
+  status        String   // "passed", "failed", "warning"
+  reason        String?  // "Violation of Data Retention Policy"
+  score         Float    @default(1.0) // 0.0 - 1.0 (Compliance Score)
+  evidence      String?  @default("{}") // JSON string with logs/metrics proving compliance
+  signature     String   @default("") // Hash of the log entry (Tamper-evident)
+  certifiedBy   String   @default("system") // "system" or userId
+  timestamp     DateTime @default(now())
+
+  @@index([incidentId])
+  @@index([status])
+  @@index([timestamp])
+}
+
+model RemediationScript {
+  id            String   @id @default(cuid())
+  name          String   // "Restart Service", "Rollback Deployment", "Scale Database"
+  type          String   // "SHELL", "KUBECTL", "SQL", "API"
+  command       String   // The raw command to execute
+  workspaceId   String?
+  description   String?  // Human-readable description
+  risk          String?  // "LOW", "MEDIUM", "HIGH", "CRITICAL"
+  estimatedDuration String? // "5m", "10s", etc.
+  enabled       Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([type])
+}
+
+model IncidentUpdate {
+  id            String   @id @default(cuid())
+  incidentId    String   // Links to Thread/Incident
+  phase         String   // "DETECTION", "PROPOSAL_FIX", "EXECUTION", "VERIFICATION", "CLOSED"
+  status        String   // "PENDING_HUMAN_APPROVAL", "FAILED", "SUCCESS", "IN_PROGRESS"
+  actor         String   // "AI_AGENT" or "HUMAN_USER"
+  content       String   @default("") // JSON or text of details/logs
+  metadata      String?  // JSON string with additional context
+  approvedBy    String?  // User ID who approved
+  approvedAt    DateTime?
+  timestamp     DateTime @default(now())
+
+  @@index([incidentId])
+  @@index([phase])
+  @@index([status])
+  @@index([timestamp])
+}
