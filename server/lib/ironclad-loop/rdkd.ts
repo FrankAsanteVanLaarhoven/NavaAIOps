@@ -7,8 +7,8 @@
  * based on vector proximity.
  */
 
-import { db } from '../../../lib/db';
-import { initNanoEmbed, createNanoEmbed, cosineSimilarity } from '../../inference/nano-embed';
+import { db } from '../../../src/lib/db';
+import { initNanoEmbed, createNanoEmbed, cosineSimilarity } from '../inference/nano-embed';
 import { spawn, ChildProcess } from 'child_process';
 import { nanoid } from 'nanoid';
 
@@ -37,7 +37,12 @@ export async function startIroncladLoop(config: RDKDConfig) {
   console.log('🚀 STARTING IRONCLAD ADAPTIVE LOOP');
 
   // 1. Initialize Nano-Embed (Fast Inference)
-  await initNanoEmbed(config.embeddingModelPath);
+  try {
+    await initNanoEmbed(config.embeddingModelPath);
+  } catch (error: any) {
+    console.warn('⚠️ Nano-Embed initialization failed (using fallback):', error.message);
+    // Continue with fallback mode
+  }
 
   // 2. Start Rust Scraper in separate process (if path provided)
   if (config.rustScraperPath) {
@@ -79,18 +84,27 @@ export async function startIroncladLoop(config: RDKDConfig) {
 
     try {
       // A. Fetch Latest Signals (From SignalStream table)
-      const signals = await db.signalStream.findMany({
-        where: {
-          processed: false,
-          timestamp: {
-            gte: new Date(Date.now() - 60 * 1000), // Last minute
+      let signals: any[] = [];
+      try {
+        signals = await db.signalStream.findMany({
+          where: {
+            processed: false,
+            timestamp: {
+              gte: new Date(Date.now() - 60 * 1000), // Last minute
+            },
           },
-        },
-        orderBy: {
-          timestamp: 'desc',
-        },
-        take: 10,
-      }).catch(() => []);
+          orderBy: {
+            timestamp: 'desc',
+          },
+          take: 10,
+        });
+      } catch (error: any) {
+        // SignalStream table may not exist yet - that's OK
+        if (!error.message.includes('does not exist') && !error.message.includes('Unknown model')) {
+          console.error('Error fetching signals:', error.message);
+        }
+        return; // Idle cycle if table doesn't exist
+      }
 
       if (signals.length === 0) {
         return; // Idle cycle - no new signals
