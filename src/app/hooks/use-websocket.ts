@@ -18,18 +18,34 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Map<string, { userId: string; userName: string }>>(new Map());
+  
+  // Use refs for callbacks to avoid dependency issues
+  const onMessageRef = useRef(onMessage);
+  const onTypingRef = useRef(onTyping);
+  const onStopTypingRef = useRef(onStopTyping);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onTypingRef.current = onTyping;
+    onStopTypingRef.current = onStopTyping;
+  }, [onMessage, onTyping, onStopTyping]);
 
   useEffect(() => {
+    // Only connect on client-side
+    if (typeof window === 'undefined') return;
     if (!user) return;
 
     // Connect to WebSocket server
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || window.location.origin;
     const socket = io(wsUrl, {
       path: '/socket.io',
       transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+      timeout: 10000,
+      autoConnect: true,
     });
 
     socketRef.current = socket;
@@ -39,9 +55,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       setIsConnected(true);
     });
 
-    socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+    socket.on('disconnect', (reason) => {
+      console.log('WebSocket disconnected:', reason);
       setIsConnected(false);
+    });
+
+    socket.on('connect_error', (error) => {
+      console.warn('WebSocket connection error:', error.message);
+      setIsConnected(false);
+      // Don't throw - just log and continue without WebSocket
     });
 
     // Join channel if provided
@@ -62,7 +84,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
 
     // Message handlers
     socket.on('message-received', (data: { message: any }) => {
-      onMessage?.(data.message);
+      onMessageRef.current?.(data.message);
     });
 
     socket.on('user-typing', (data: { userId: string; userName: string }) => {
@@ -71,7 +93,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         newMap.set(data.userId, { userId: data.userId, userName: data.userName });
         return newMap;
       });
-      onTyping?.(data);
+      onTypingRef.current?.(data);
     });
 
     socket.on('user-stopped-typing', (data: { userId: string }) => {
@@ -80,14 +102,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         newMap.delete(data.userId);
         return newMap;
       });
-      onStopTyping?.(data);
+      onStopTypingRef.current?.(data);
     });
 
     return () => {
-      socket.disconnect();
-      socketRef.current = null;
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+      setIsConnected(false);
     };
-  }, [user, channelId, threadId, onMessage, onTyping, onStopTyping]);
+  }, [user?.id, channelId, threadId]); // Only depend on IDs, not functions
 
   const sendTyping = useCallback(() => {
     if (socketRef.current && threadId && user) {

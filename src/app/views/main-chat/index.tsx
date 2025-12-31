@@ -12,6 +12,9 @@ import { useMobileGestures } from '@/app/hooks/use-mobile-gestures';
 import { useEffect, useState } from 'react';
 import { VoiceInput } from '@/components/voice/VoiceInput';
 import { GestureController } from '@/components/gestures/GestureController';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Leaderboard } from '@/components/gamification/Leaderboard';
+import { IntegrationHub } from '@/components/integrations/IntegrationHub';
 
 export function MainChatView() {
   const { viewState, setChannel, setThread } = useView();

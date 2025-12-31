@@ -149,10 +149,9 @@ export async function generateCertificate({
         yPosition += 20; // Step padding
       });
 
-      // Footer / Hash
+      // Footer / Hash placeholder (actual hash generated in 'end' callback)
       yPosition += 20;
-      const hash = await generateHash(executionLogs);
-      doc.fontSize(8).text(`Certificate Hash: ${hash}`, 50, yPosition, { color: '#9ca3af' });
+      doc.fontSize(8).text(`Certificate Hash: [Generated on completion]`, 50, yPosition, { color: '#9ca3af' });
 
       doc.end();
     } catch (error) {

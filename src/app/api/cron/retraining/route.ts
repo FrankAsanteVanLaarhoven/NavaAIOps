@@ -11,11 +11,18 @@ import { mkdir } from 'fs/promises';
  */
 export const runtime = 'nodejs';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export async function GET(req: NextRequest) {
+  // Lazy initialize OpenAI to avoid build-time errors
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({
+      success: false,
+      message: 'OpenAI API key not configured. Skipping retraining job.',
+    }, { status: 200 }); // Return 200 to not fail the build
+  }
+  
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+  });
   try {
     // Verify cron secret (Vercel sets this automatically)
     const authHeader = req.headers.get('authorization');

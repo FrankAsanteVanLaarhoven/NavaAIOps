@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react';
 
-export type ViewType = 'onboarding' | 'main-chat' | 'settings' | 'profile';
+export type ViewType = 'onboarding' | 'main-chat' | 'settings' | 'profile' | 'dashboard';
 
 export interface ViewState {
   view: ViewType;
@@ -27,7 +27,7 @@ const ViewContext = createContext<ViewContextType | undefined>(undefined);
 
 export function ViewProvider({ children }: { children: ReactNode }) {
   const [viewState, setViewState] = useState<ViewState>({
-    view: 'main-chat',
+    view: 'dashboard',
   });
 
   const setView = (view: ViewType) => {

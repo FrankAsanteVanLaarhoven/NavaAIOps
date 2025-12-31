@@ -1,6 +1,177 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* --- Minority Report / Minority Fresh Aesthetic --- */
+/* Root Variables (Minority Report Aesthetic) */
+:root {
+  /* Palette: Deep Space Black, Neon Cyan, Success Green, Error Red */
+  --color-space-black: 10 10 20; /* Deep Space Black (Background) */
+  --color-neon-cyan: 0 255 204; /* Neon Cyan (Accents) */
+  --color-success-green: 52 211 153; /* Success Green (Accept/Halo) */
+  --color-error-red: 220 38 38; /* Error Red (Deny/Hazard) */
+  --color-text-primary: 243 245 255; /* Crisp White (Text) */
+  --color-text-secondary: 148 163 184; /* Slate Gray (Subtext) */
+  --color-bg-glass: rgba(255, 255, 255, 0.1); /* Frosted Glass */
+}
+
+/* Typography: Cinematic / Sci-Fi */
+.font-cinematic {
+  font-family: var(--font-rajdhani), sans-serif;
+}
+
+/* NAVA Typography with Gradient (from screenshot) */
+.nava-gradient-text {
+  background: linear-gradient(to right, #3b82f6 0%, #60a5fa 50%, #e5e7eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Animations (Framer Motion) */
+.animate-scale-in {
+  animation: scaleIn 0.4s cubic-bezier(0.16, 1, 0.3);
+}
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3);
+}
+@keyframes slideUp {
+  from { transform: translateY(50px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s infinite ease-in-out;
+}
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0px rgb(var(--color-neon-cyan)); opacity: 0; }
+  50% { box-shadow: 0 0 20px rgb(var(--color-neon-cyan)); opacity: 0.5; }
+  100% { box-shadow: 0 0 0px rgb(var(--color-neon-cyan)); opacity: 0; }
+}
+
+/* Effects (Halo, Glassmorphism) */
+.glass-panel {
+  background: var(--color-bg-glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.halo-glow-success {
+  box-shadow: 0 0 15px 2px rgb(var(--color-success-green));
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.halo-glow-error {
+  box-shadow: 0 0 15px 2px rgb(var(--color-error-red));
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* Prevent flash of unstyled content and blank screen */
+html {
+  visibility: visible !important;
+  background-color: oklch(1 0 0) !important; /* White background */
+  opacity: 1 !important;
+}
+
+body {
+  visibility: visible !important;
+  opacity: 1 !important;
+  background-color: oklch(1 0 0) !important; /* White background - prevents blank screen */
+  min-height: 100vh !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure #__next has background and fills screen */
+#__next {
+  min-height: 100vh !important;
+  background-color: inherit !important;
+  display: flex;
+  flex-direction: column;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Hide any Next.js branding/logos - Comprehensive removal */
+[data-nextjs-toast],
+[data-nextjs-scroll-to-top],
+[data-nextjs-router],
+.nextjs-watermark,
+[class*="nextjs"],
+[class*="vercel"],
+[class*="__next"],
+[id*="__next"],
+[id*="nextjs"],
+[data-nextjs-portal],
+[data-nextjs-dialog],
+/* Hide Next.js development indicators */
+[data-nextjs-error-overlay],
+[data-nextjs-dev-overlay],
+/* Hide any Vercel branding */
+[class*="vercel"],
+[id*="vercel"],
+/* Hide Next.js script tags with branding */
+script[src*="next"]:not([src*="next.config"]),
+link[href*="next"]:not([rel="stylesheet"]):not([href*="next.config"]) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  position: absolute !important;
+  left: -9999px !important;
+}
+
+/* Hide any text content containing Next.js branding */
+body * {
+  text-rendering: optimizeLegibility;
+}
+
+/* Additional hiding for development mode indicators */
+body::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Ensure buttons are clickable - but respect disabled state */
+button:not(:disabled),
+[role="button"]:not(:disabled),
+[type="button"]:not(:disabled),
+[data-slot="button"]:not(:disabled) {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none;
+  position: relative;
+  z-index: 10 !important;
+}
+
+/* Keep disabled buttons properly disabled */
+button:disabled,
+[role="button"]:disabled,
+[type="button"]:disabled,
+[data-slot="button"]:disabled {
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  opacity: 0.5;
+}
+
+/* Ensure buttons inside pointer-events-none containers are still clickable (but not disabled ones) */
+.pointer-events-none button:not(:disabled),
+.pointer-events-none [role="button"]:not(:disabled),
+.pointer-events-none [type="button"]:not(:disabled),
+.pointer-events-none [data-slot="button"]:not(:disabled) {
+  pointer-events: auto !important;
+  z-index: 20 !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -119,42 +290,57 @@
   body {
     @apply bg-background text-foreground;
   }
-}
 
-/* Mobile optimizations */
-@media (max-width: 768px) {
-  /* Improve touch targets */
-  button, a, [role="button"] {
-    min-height: 44px;
-    min-width: 44px;
+  /* --- Root Variables --- */
+  /* LIGHT THEME (Fresh) */
+  --color-galaxy-black: 24 10 20; /* Deep Space Black: #141416 */
+  --color-galaxy-white: 243 245 255; /* Crisp White: #F3F4F5 */
+  --color-galaxy-accent: 6 182 212; /* Vivid Cyan/Blue-Purple: #01B6F4 */
+  --color-galaxy-border: 51 65 85; /* Subtle Border */
+  --color-galaxy-success: 52 211 153; /* Success Green */
+  --color-galaxy-error: 239 68 68; /* Error Red */
+  --color-galaxy-warn: 234 179 8; /* Warning Yellow */
+  
+  /* DARK PLUS THEME (Minority Report Style) */
+  --background-primary: 20 20 23; /* Galaxy Black: Slightly lighter for card bg */
+  --foreground-primary: var(--color-galaxy-white); /* White Text */
+  --border-primary: var(--color-galaxy-border);
+  --accent-primary: var(--color-galaxy-accent);
+  
+  /* Card Styling */
+  --card-bg: 255 255 255 1; /* Glass effect */
+  --card-dark-bg: rgba(20, 20, 23, 0.1); /* Dark Glass Card */
+  
+  /* --- Animations --- */
+  @keyframes data-stream {
+    0% { transform: translateY(0px); opacity: 0; }
+    100% { transform: translateY(-10px); opacity: 1; }
   }
   
-  /* Prevent text selection on swipe */
-  .swipeable {
-    -webkit-user-select: none;
-    user-select: none;
-    -webkit-touch-callout: none;
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 10px rgb(var(--color-galaxy-accent)); }
+    50% { box-shadow: 0 0 20px rgb(var(--color-galaxy-accent)); }
   }
   
-  /* Smooth scrolling */
-  * {
-    -webkit-overflow-scrolling: touch;
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
   }
-}
 
-/* Performance optimizations */
-.lazy-load {
-  content-visibility: auto;
-}
+  @keyframes scan {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100vh);
+    }
+  }
 
-/* Reduce motion for users who prefer it */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+  /* --- Typography (Sci-Fi) --- */
+  .font-sci-fi {
+    font-family: var(--font-rajdhani), 'Inter', sans-serif; /* Futuristic Font */
+    letter-spacing: 0.05em;
+    font-weight: 600;
   }
 }
 

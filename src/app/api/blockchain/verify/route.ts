@@ -35,7 +35,20 @@ export async function GET(req: NextRequest) {
     }
 
     // Create bridge and verify
-    const bridge = createPolygonBridge();
+    let bridge;
+    try {
+      bridge = createPolygonBridge();
+    } catch (error: any) {
+      // Bridge not configured
+      return NextResponse.json({
+        logId,
+        verified: false,
+        exists: false,
+        error: 'Blockchain verification not configured. Please set NAVACHAIN_CONTRACT_ADDRESS.',
+        contractAddress: null,
+      });
+    }
+    
     const result = await bridge.verifyLog(logId);
 
     return NextResponse.json({

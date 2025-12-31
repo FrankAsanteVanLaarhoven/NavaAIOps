@@ -193,7 +193,8 @@ async function opsReflexor(request: MoERequest): Promise<any> {
  */
 async function codeReflexor(request: MoERequest): Promise<any> {
   // Use existing code analysis
-  const { analyzeCodeContext } = await import('./ai-finetuned');
+  // Use existing code analysis
+  const { analyzeCodeContext } = await import('@/lib/ai-finetuned');
 
   try {
     if (request.context?.incidentId) {

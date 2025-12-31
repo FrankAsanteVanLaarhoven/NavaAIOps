@@ -17,11 +17,16 @@ interface UserContextType {
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Initialize with a default demo user to prevent blank screen
+  const [user, setUser] = useState<User | null>({
+    id: 'demo-user',
+    email: 'demo@example.com',
+    name: 'Demo User',
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Fetch or create demo user
+    // Fetch or create demo user (non-blocking)
     async function initUser() {
       try {
         // Try to get existing user or create demo user
@@ -45,12 +50,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
           }
         }
       } catch (error) {
-        console.error('Failed to initialize user:', error);
-      } finally {
-        setIsLoading(false);
+        // Silently fail - keep default demo user
+        console.warn('Failed to initialize user:', error);
       }
     }
 
+    // Run in background, don't block render
     initUser();
   }, []);
 

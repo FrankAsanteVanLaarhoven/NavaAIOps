@@ -5,7 +5,8 @@
  */
 
 import { NextAuthOptions } from 'next-auth';
-import { PrismaAdapter } from '@next-auth/prisma-adapter';
+// import { PrismaAdapter } from '@next-auth/prisma-adapter';
+// Note: Install with: npm install @next-auth/prisma-adapter
 import GoogleProvider from 'next-auth/providers/google';
 import GitHubProvider from 'next-auth/providers/github';
 import { db } from './db';
@@ -14,7 +15,7 @@ import { db } from './db';
  * NextAuth configuration
  */
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(db),
+  // adapter: PrismaAdapter(db), // Uncomment when @next-auth/prisma-adapter is installed
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID || '',

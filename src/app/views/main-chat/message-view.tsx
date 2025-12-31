@@ -1,15 +1,24 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useQueryClient } from '@tanstack/react-query';
 import { MessageList } from '@/components/chat/MessageList';
-import { MessageEditor } from '@/components/chat/MessageEditor';
+// Lazy load MessageEditor to avoid unicode-font-resolver bundling issues
+const MessageEditor = dynamic(() => import('@/components/chat/MessageEditor').then(m => ({ default: m.MessageEditor })), {
+  ssr: false,
+  loading: () => <div className="p-4 text-sm text-muted-foreground">Loading editor...</div>,
+});
 import { SummarizeThread } from '@/components/chat/SummarizeThread';
 import { FloatingAIPanel } from '@/components/ai/floating-ai-panel';
 import { ThreadModules } from '@/components/thread/ThreadModules';
 import { IncidentPanel } from '@/components/incidents/IncidentPanel';
 import { RAGAssistant } from '@/components/rag/RAGAssistant';
 import { AutomationBuilder } from '@/components/automations/AutomationBuilder';
-import { CanvasEditor } from '@/components/canvas/CanvasEditor';
+// Lazy load CanvasEditor to avoid unicode-font-resolver bundling issues
+const CanvasEditor = dynamic(() => import('@/components/canvas/CanvasEditor').then(m => ({ default: m.CanvasEditor })), {
+  ssr: false,
+  loading: () => <div className="p-4 text-sm text-muted-foreground">Loading editor...</div>,
+});
 import { Button } from '@/components/ui/button';
 import { Sparkles, FileText, Code, Zap } from 'lucide-react';
 import { useView } from '@/app/state/view-context';

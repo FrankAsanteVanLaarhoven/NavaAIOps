@@ -1,15 +1,17 @@
 import { z } from 'zod';
 import { TRPCError } from '@trpc/server';
-import { publicProcedure, router } from '../../_app';
+import { publicProcedure, router } from '../_app';
 import { db } from '@/lib/db';
 import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import { mkdir } from 'fs/promises';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const openai = process.env.OPENAI_API_KEY 
+  ? new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    })
+  : null;
 
 export const retrainingRouter = router({
   triggerJob: publicProcedure
@@ -20,6 +22,13 @@ export const retrainingRouter = router({
       })
     )
     .mutation(async ({ input }) => {
+      if (!openai) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'OpenAI API key not configured',
+        });
+      }
+      
       // 1. Fetch new success data (last 24h)
       const newLogs = await db.auditLog.findMany({
         where: {
@@ -113,6 +122,13 @@ export const retrainingRouter = router({
   getJobStatus: publicProcedure
     .input(z.object({ jobId: z.string() }))
     .query(async ({ input }) => {
+      if (!openai) {
+        throw new TRPCError({
+          code: 'INTERNAL_SERVER_ERROR',
+          message: 'OpenAI API key not configured',
+        });
+      }
+      
       try {
         const job = await openai.fineTuning.jobs.retrieve(input.jobId);
         return {

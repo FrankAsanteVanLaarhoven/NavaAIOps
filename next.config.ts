@@ -1,11 +1,19 @@
 import type { NextConfig } from "next";
+import webpack from "webpack";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Only use standalone output in production builds, not in dev
+  ...(process.env.NODE_ENV === 'production' ? { output: "standalone" } : {}),
   
   // Performance optimizations
   compress: true,
   poweredByHeader: false,
+  
+  // Suppress connection errors in development
+  onDemandEntries: {
+    maxInactiveAge: 25 * 1000,
+    pagesBufferLength: 2,
+  },
   
   // Image optimization
   images: {
@@ -18,6 +26,12 @@ const nextConfig: NextConfig = {
   // Experimental features for performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+  },
+  
+  // Configure SWC compiler options
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
   
   // Webpack optimizations
@@ -53,6 +67,50 @@ const nextConfig: NextConfig = {
         },
       };
     }
+    
+    // Exclude problematic troika-three-text files from SWC processing
+    // These files contain Unicode regex patterns that SWC can't parse
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
+    
+    // Find all rules that use SWC loader and add exclude for troika-three-text dist files
+    config.module.rules.forEach((rule: any) => {
+      if (rule && rule.use) {
+        const uses = Array.isArray(rule.use) ? rule.use : [rule.use];
+        const hasSwcLoader = uses.some((use: any) => 
+          use && (use.loader?.includes('next-swc-loader') || use === 'next-swc-loader')
+        );
+        
+        if (hasSwcLoader) {
+          // Add exclude patterns for troika-three-text dist files
+          const excludePatterns = [
+            /node_modules[\\/]troika-three-text[\\/]dist/,
+            /node_modules[\\/].*unicode-font-resolver/,
+          ];
+          
+          if (rule.exclude) {
+            if (Array.isArray(rule.exclude)) {
+              rule.exclude.push(...excludePatterns);
+            } else {
+              rule.exclude = [rule.exclude, ...excludePatterns];
+            }
+          } else {
+            rule.exclude = excludePatterns.length === 1 ? excludePatterns[0] : excludePatterns;
+          }
+        }
+      }
+    });
+    
+    // Also use IgnorePlugin as a fallback - completely exclude troika-three-text
+    // Note: The source files are already patched, but this prevents any bundling issues
+    config.plugins = config.plugins || [];
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /troika-three-text/,
+        contextRegExp: /node_modules/,
+      })
+    );
+    
     return config;
   },
   

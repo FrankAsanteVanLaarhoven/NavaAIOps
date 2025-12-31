@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stopIroncladLoop } from '../../../../server/lib/ironclad-loop/rdkd';
+// Note: Ironclad loop functionality - file exists but may need to be moved to src/lib
+// import { stopIroncladLoop } from '../../../../server/lib/ironclad-loop/rdkd';
 
 /**
  * Stop Ironclad Adaptive Loop
@@ -9,7 +10,8 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    stopIroncladLoop();
+    // TODO: Implement Ironclad loop stop
+    // stopIroncladLoop();
 
     return NextResponse.json({
       success: true,

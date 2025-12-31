@@ -40,6 +40,7 @@ function Button({
   variant,
   size,
   asChild = false,
+  type = "button",
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
@@ -50,7 +51,8 @@ function Button({
   return (
     <Comp
       data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }))}
+      type={type}
+      className={cn(buttonVariants({ variant, size, className }), "pointer-events-auto cursor-pointer")}
       {...props}
     />
   )
